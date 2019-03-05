@@ -14,9 +14,10 @@ public class Game : PersistableObject
 
     private List<Shape> _shapes;
 
+    private Random.State mainRandomState;
+
     // Настраиваемые кнопки управления
     [SerializeField] private KeyCode createKey = KeyCode.C;
-
     [SerializeField] private KeyCode destroyKey = KeyCode.X;
     [SerializeField] private KeyCode newGameKey = KeyCode.N;
     [SerializeField] private KeyCode saveGameKey = KeyCode.S;
@@ -29,16 +30,16 @@ public class Game : PersistableObject
 
     // Подключаемые скрипты
     [SerializeField] private PersistentStorage storage;
-
     [SerializeField] private ShapeFactory[] shapeFactories;
 
     public float CreationSpeed { get; set; }
     public float DestructionSpeed { get; set; }
-
-    private Random.State mainRandomState;
+    public static Game Instance { get; set; }
 
     private void OnEnable()
     {
+        Instance = this;
+
         if (shapeFactories[0].FactoryId != 0)
         {
             for (int i = 0; i < shapeFactories.Length; i++)
@@ -79,7 +80,7 @@ public class Game : PersistableObject
         //куча ифов для кнопок
         if (Input.GetKey(createKey))
         {
-            CreateShape();
+            GameLevel.Current.SpawnShapes();
         }
         else if (Input.GetKey(destroyKey))
         {
@@ -119,7 +120,7 @@ public class Game : PersistableObject
         while (creationProgress >= 1f)
         {
             creationProgress -= 1f;
-            CreateShape();
+            GameLevel.Current.SpawnShapes();
         }
 
         //управление скоростью разрушения шейпов
@@ -151,18 +152,6 @@ public class Game : PersistableObject
         _shapes.Clear();
     }
 
-    //Создаём шейп
-    //Ставим в рандомную позицию в шаре, присваиваем цвет и добавляем в список
-    private void CreateShape()
-    {
-        Random.state = mainRandomState;
-        int seed = Random.Range(0, int.MaxValue) ^ (int)Time.unscaledTime;
-        mainRandomState = Random.state;
-        Random.InitState(seed);
-
-        _shapes.Add(GameLevel.Current.SpawnShape());
-    }
-
     //Выбирает рандомный индекс для списка
     //Меняет местами последний и выбранный и удаляет
     private void DestroyShape()
@@ -175,6 +164,11 @@ public class Game : PersistableObject
             _shapes[index] = _shapes[lastIndex];
             _shapes.RemoveAt(lastIndex);
         }
+    }
+
+    public void AddShape(Shape shape)
+    {
+        _shapes.Add(shape);
     }
 
     //Просто записываем числов шейпов в списке, Id и Id материала
@@ -243,7 +237,6 @@ public class Game : PersistableObject
 
             Shape instance = shapeFactories[factoryId].GetShape(shapeId, materialId);
             instance.Load(reader);
-            _shapes.Add(instance);
         }
     }
 
