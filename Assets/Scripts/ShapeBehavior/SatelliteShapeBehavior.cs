@@ -4,11 +4,12 @@ using UnityEngine;
 
 public sealed class SatelliteShapeBehavior : ShapeBehavior
 {
-    Shape focalShape;
+    ShapeInstance focalShape;
 
     float frequency;
 
     Vector3 cosOffset, sinOffset;
+    Vector3 previousPosition;
 
     public override ShapeBehaviorType BehaviorType
     {
@@ -18,17 +19,39 @@ public sealed class SatelliteShapeBehavior : ShapeBehavior
         }
     }
 
-    public override void GameUpdate(Shape shape)
+    public override bool GameUpdate(Shape shape)
     {
-        float t = 2f * Mathf.PI * frequency * shape.Age;
-        shape.transform.localPosition = 
-            focalShape.transform.localPosition +
-            cosOffset * Mathf.Cos(t) + sinOffset * Mathf.Sin(t);
+        if (focalShape.IsValid)
+        {
+            float t = 2f * Mathf.PI * frequency * shape.Age;
+            previousPosition = shape.transform.localPosition;
+            shape.transform.localPosition =
+                focalShape.Shape.transform.localPosition +
+                cosOffset * Mathf.Cos(t) + sinOffset * Mathf.Sin(t);
+            return true;
+        }
+
+        shape.AddBehavior<MovementShapeBehavior>().Velocity = 
+            (shape.transform.localPosition - previousPosition) / Time.deltaTime;
+        return false;
+    }
+
+    public override void Save(GameDataWriter writer)
+    {
+        writer.Write(focalShape);
+        writer.Write(frequency);
+        writer.Write(cosOffset);
+        writer.Write(sinOffset);
+        writer.Write(previousPosition);
     }
 
     public override void Load(GameDataReader reader)
     {
-        
+        focalShape = reader.ReadShapeInstance();
+        frequency = reader.ReadFloat();
+        cosOffset = reader.ReadVector3();
+        sinOffset = reader.ReadVector3();
+        previousPosition = reader.ReadVector3();
     }
 
     public override void Recycle()
@@ -36,9 +59,9 @@ public sealed class SatelliteShapeBehavior : ShapeBehavior
         ShapeBehaviorPool<SatelliteShapeBehavior>.Reclaim(this);
     }
 
-    public override void Save(GameDataWriter writer)
+    public override void ResolveShapeInstances()
     {
-        
+        focalShape.Resolve();
     }
 
     public void Initialize(Shape shape, Shape focalShape, float radius, float frequency)
@@ -58,6 +81,10 @@ public sealed class SatelliteShapeBehavior : ShapeBehavior
         cosOffset *= radius;
         sinOffset *= radius;
 
+        shape.AddBehavior<RotationShapeBehavior>().AngularVelocity = 
+            -360f * frequency * shape.transform.InverseTransformDirection(orbitAxis);
+
         GameUpdate(shape);
+        previousPosition = shape.transform.localPosition;
     }
 }

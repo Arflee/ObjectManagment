@@ -9,13 +9,15 @@ public abstract class ShapeBehavior
 
     public bool IsReclaimed { get; set; }
 
-    public abstract void GameUpdate(Shape shape);
+    public abstract bool GameUpdate(Shape shape);
 
     public abstract void Save(GameDataWriter writer);
 
     public abstract void Load(GameDataReader reader);
 
     public abstract void Recycle();
+
+    public virtual void ResolveShapeInstances() { }
 
 #if UNITY_EDITOR
     private void OnEnable()

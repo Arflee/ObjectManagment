@@ -131,6 +131,15 @@ public class Game : PersistableObject
             destructionProgress -= 1f;
             DestroyShape();
         }
+
+        int limit = GameLevel.Current.PopulationLimit;
+        if (limit > 0)
+        {
+            while (_shapes.Count > limit)
+            {
+                DestroyShape();
+            }
+        }
     }
 
     //Сносим все шейпы и чистим список
@@ -161,6 +170,7 @@ public class Game : PersistableObject
             int index = Random.Range(0, _shapes.Count);
             _shapes[index].Recycle();
             int lastIndex = _shapes.Count - 1;
+            _shapes[lastIndex].SaveIndex = index;
             _shapes[index] = _shapes[lastIndex];
             _shapes.RemoveAt(lastIndex);
         }
@@ -168,7 +178,13 @@ public class Game : PersistableObject
 
     public void AddShape(Shape shape)
     {
+        shape.SaveIndex = _shapes.Count;
         _shapes.Add(shape);
+    }
+    
+    public Shape GetShape(int index)
+    {
+        return _shapes[index];
     }
 
     //Просто записываем числов шейпов в списке, Id и Id материала
@@ -221,6 +237,10 @@ public class Game : PersistableObject
             creationProgress = reader.ReadFloat();
             DestructionSpeed = destructionSpeedSlider.value = reader.ReadFloat();
             destructionProgress = reader.ReadFloat();
+            for (int i = 0; i < _shapes.Count; i++)
+            {
+                _shapes[i].ResolveShapeInstances();
+            }
         }
 
         yield return LoadLevel(version < 2 ? 1 : reader.ReadInt());
