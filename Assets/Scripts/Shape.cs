@@ -36,6 +36,14 @@ public class Shape : PersistableObject
         }
     }
 
+    public bool IsMarkedAsDying
+    {
+        get
+        {
+            return Game.Instance.IsMarkedAsDying(this);
+        }
+    }
+
     public int MaterialId
     {
         get;
@@ -202,6 +210,11 @@ public class Shape : PersistableObject
         }
     }
 
+    public void Die()
+    {
+        Game.Instance.Kill(this);
+    }
+
     public void Recycle()
     {
         Age = 0f;
@@ -221,6 +234,11 @@ public class Shape : PersistableObject
         {
             behaviorList[i].ResolveShapeInstances();
         }
+    }
+
+    public void MarkAsDying()
+    {
+        Game.Instance.MarkAsDying(this);
     }
 
     public T AddBehavior<T>() where T : ShapeBehavior, new()
